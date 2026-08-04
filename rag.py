@@ -43,7 +43,6 @@ retriever = vector.as_retriever(
 llm = ChatGroq(
     model="llama-3.1-8b-instant"
 )
-
 prompt = ChatPromptTemplate.from_template(
     """Act as a resume analyzer. Use the resume context below to answer the user's question accurately.
 
