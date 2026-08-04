@@ -1,40 +1,68 @@
 from dotenv import load_dotenv
-load_dotenv() 
+load_dotenv()
 
-from langchain_community.document_loaders import PyPDFLoader
 from pathlib import Path
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma.vectorstores import Chroma
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
 
-new_path=input("enter your path")
-path=Path(new_path)
-new_path=PyPDFLoader(path)
+file_path = input("ENTER THE FILE PATH : ").strip()
+path = Path(file_path)
 
-splitter=RecursiveCharacterTextSplitter(
+loader = PyPDFLoader(path)
+docs = loader.load()
+
+splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
-    chunk_overlap=10
-    
+    chunk_overlap=100,
 )
 
-text_split=splitter.split_documents(new_path)
+text = splitter.split_documents(docs)
 
-
-embeddings=HuggingFaceEmbeddings(
+embedding = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-
-vectors=Chroma.from_documents(
-    model=embeddings,
-    chunks=splitter
-
+vector = Chroma.from_documents(
+    documents=text,
+    embedding=embedding,
 )
 
+retriever = vector.as_retriever(
+    search_type="mmr",
+    search_kwargs={
+        "k": 4,
+        "fetch_k": 1000,
+        "lambda_mult": 0.5,
+    },
+)
 
+llm = ChatGroq(
+    model="llama-3.1-8b-instant"
+)
 
+prompt = ChatPromptTemplate.from_template(
+    """Act as a resume analyzer. Use the resume context below to answer the user's question accurately.
 
+Context:
+{context}
 
+Question:
+{question}"""
+)
 
+question = input("enter your Query : ").strip()
 
+retrieved_docs = retriever.invoke(question)
+context = "\n\n".join(doc.page_content for doc in retrieved_docs if getattr(doc, "page_content", None))
 
+prompt_value = prompt.invoke({
+    "question": question,
+    "context": context,
+})
+
+response = llm.invoke(prompt_value)
+print(response.content)
