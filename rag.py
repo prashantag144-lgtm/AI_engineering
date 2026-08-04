@@ -19,7 +19,6 @@ splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=100,
 )
-
 text = splitter.split_documents(docs)
 
 embedding = HuggingFaceEmbeddings(
