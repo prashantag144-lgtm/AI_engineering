@@ -94,16 +94,22 @@ agent = create_agent(
 )
 
 print("City Agent | type exit to quit")
-history=[]
+history = []
+
 while True:
-    user_input = input("You : ")
-    history.append(user_input)
+    user_input = input("You: ")
+
     if user_input.lower() == "exit":
-        break 
+        break
+
+    history.append(HumanMessage(content=user_input))
+
     result = agent.invoke({
-        "messages": [{"role": "user", "content": user_input}]
+        "messages": history
     })
 
-    print("bot : ", result['messages'][-1].content )
-    history.append(result['messages'][-1].content)
-        
+    assistant_message = result["messages"][-1]
+
+    history.append(assistant_message)
+
+    print("Bot:", assistant_message.content)
