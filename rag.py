@@ -42,6 +42,7 @@ retriever = vector.as_retriever(
 llm = ChatGroq(
     model="llama-3.1-8b-instant"
 )
+
 prompt = ChatPromptTemplate.from_template(
     """Act as a resume analyzer. Use the resume context below to answer the user's question accurately.
 
@@ -52,15 +53,25 @@ Question:
 {question}"""
 )
 
-question = input("enter your Query : ").strip()
+while(True):
+    
+    question = input("enter your Query : ").strip()
+    if(question=="clear"):
+        break
 
-retrieved_docs = retriever.invoke(question)
-context = "\n\n".join(doc.page_content for doc in retrieved_docs if getattr(doc, "page_content", None))
+    retrieved_docs = retriever.invoke(question)
+    context = ""
 
-prompt_value = prompt.invoke({
-    "question": question,
-    "context": context,
-})
+    for doc in retrieved_docs:
+        if doc.page_content:
+            context += doc.page_content
+            context += "\n\n"
 
-response = llm.invoke(prompt_value)
-print(response.content)
+    prompt_value = prompt.invoke({
+        "question": question,
+        "context": context,
+    })
+
+    response = llm.invoke(prompt_value)
+    print(response.content)
+
